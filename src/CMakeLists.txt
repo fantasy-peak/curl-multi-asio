@@ -5,8 +5,7 @@ target_include_directories(curl-multi-asio
 
 target_link_libraries(curl-multi-asio
 	PUBLIC asio
-	PUBLIC CURL::libcurl
-	PUBLIC tl::expected)
+	PUBLIC CURL::libcurl)
 
 if (CMA_CURL_OPENSSL)
 	find_package(OpenSSL REQUIRED)

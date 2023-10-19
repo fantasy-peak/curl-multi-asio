@@ -88,9 +88,15 @@ int Multi::SocketCallback(CURL* easy, curl_socket_t s, int what,
 	Multi* userp, int* socketp) noexcept
 {
 	// delete our last action
-	if (what == CURL_POLL_REMOVE)
-	{
-		delete socketp;
+	if (what == CURL_POLL_REMOVE) {
+		auto socketIt = userp->m_easySocketMap.find(s);
+		if (socketIt == userp->m_easySocketMap.end()) {
+			delete socketp;
+			return 0;
+		}
+		asio::post(socketIt->second.get_executor(), [=] {
+			delete socketp;
+		});
 		return 0;
 	}
 	if (socketp == nullptr)

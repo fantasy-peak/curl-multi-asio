@@ -8,7 +8,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 # we need curl of course
 find_package(CURL REQUIRED)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(CMA_BUILD_EXAMPLES "Build curl-multi-asio examples" ON)
@@ -42,7 +42,6 @@ if (${CMAKE_SOURCE_DIR} STREQUAL ${PROJECT_SOURCE_DIR})
 endif()
 
 # the main library is built in src
-add_subdirectory(extern)
 add_subdirectory(src)
 if (CMA_BUILD_EXAMPLES)
 	add_subdirectory(examples)

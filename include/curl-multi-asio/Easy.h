@@ -11,7 +11,7 @@
 #include <curl-multi-asio/Error.h>
 
 // expected includes
-#include <tl/expected.hpp>
+#include <expected>
 
 // STL includes
 #include <initializer_list>
@@ -117,11 +117,11 @@ namespace cma
 		/// @param info The info
 		/// @return An instance to the type, or the error
 		template<typename T>
-		inline tl::expected<T, error_code> GetInfo(CURLINFO info) noexcept
+		inline std::expected<T, error_code> GetInfo(CURLINFO info) noexcept
 		{
 			T inst;
 			if (auto res = GetInfo(info, inst); res)
-				return tl::make_unexpected(res);
+				return std::unexpected(res);
 			// no copy elision here. move it into the expected
 			return std::move(inst);
 		}
