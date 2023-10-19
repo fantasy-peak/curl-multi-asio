@@ -115,12 +115,12 @@ int Multi::SocketCallback(CURL* easy, curl_socket_t s, int what,
 	if ((what == CURL_POLL_IN || what == CURL_POLL_INOUT) &&
 		(last != CURL_POLL_IN && last != CURL_POLL_INOUT))
 		socketIt->second.async_read_some(boost::asio::null_buffers(),
-			boost::asio::bind_executor(userp->m_strand, std::bind(&Multi::EventCallback,
+			boost::asio::bind_executor(userp->m_executor, std::bind(&Multi::EventCallback,
 				userp, std::placeholders::_1, s, CURL_POLL_IN, socketp)));
 	if ((what == CURL_POLL_OUT || what == CURL_POLL_INOUT) &&
 		(last != CURL_POLL_OUT && last != CURL_POLL_INOUT))
 		socketIt->second.async_write_some(boost::asio::null_buffers(),
-			boost::asio::bind_executor(userp->m_strand, std::bind(&Multi::EventCallback,
+			boost::asio::bind_executor(userp->m_executor, std::bind(&Multi::EventCallback,
 				userp, std::placeholders::_1, s, CURL_POLL_OUT, socketp)));
 	return 0;
 }
