@@ -5,7 +5,7 @@
 
 using cma::Multi;
 
-Multi::Multi(const asio::any_io_executor& executor) noexcept
+Multi::Multi(const boost::asio::any_io_executor& executor) noexcept
 	: m_executor(executor), m_timer(executor), m_strand(executor),
 	m_nativeHandle(curl_multi_init(), curl_multi_cleanup)
 {
@@ -17,16 +17,16 @@ Multi::Multi(const asio::any_io_executor& executor) noexcept
 	SetOption(CURLMoption::CURLMOPT_SOCKETDATA, this);
 }
 
-size_t Multi::Cancel(asio::error_code& ec, CURLMcode error) noexcept
+size_t Multi::Cancel(boost::system::error_code& ec, CURLMcode error) noexcept
 {
 	// if there are no operations, there is no need for a timer.
 	m_timer.cancel(ec);
 	for (auto& handler : m_easyHandlerMap)
 	{
 		// post each completion in case the handler tries to cancel itself
-		asio::post(m_executor, [handler = std::move(handler.second)]
+		boost::asio::post(m_executor, [handler = std::move(handler.second)]
 			{
-				handler->Complete(asio::error::operation_aborted);
+				handler->Complete(boost::asio::error::operation_aborted);
 			});
 	}
 	m_easyHandlerMap.clear();
@@ -40,16 +40,16 @@ bool Multi::Cancel(const Easy& easy, CURLMcode error) noexcept
 	if (handlerIt == m_easyHandlerMap.end())
 		return false;
 	// post each completion in case the handler tries to cancel itself
-	asio::post(m_executor, [handler = std::move(handlerIt->second)]
+	boost::asio::post(m_executor, [handler = std::move(handlerIt->second)]
 		{
-			handler->Complete(asio::error::operation_aborted);
+			handler->Complete(boost::asio::error::operation_aborted);
 		});
 	// delete the handler
 	m_easyHandlerMap.erase(handlerIt);
 	// if there are no more operations, there is no need for a timer
 	if (m_easyHandlerMap.empty() == true)
 	{
-		asio::error_code ignored;
+		boost::system::error_code ignored;
 		m_timer.cancel(ignored);
 	}
 	return true;
@@ -58,12 +58,12 @@ bool Multi::Cancel(const Easy& easy, CURLMcode error) noexcept
 int Multi::CloseSocketCb(Multi* userp, curl_socket_t item) noexcept
 {
 	auto socketIt = userp->m_easySocketMap.find(item);
-	asio::error_code ec;
+	boost::system::error_code ec;
 	// move the socket out so it doesn't get stuck if the close fails.
 	// delete the old iterator
 	auto socket = std::move(socketIt->second);
 	userp->m_easySocketMap.erase(socketIt);
-	socket.shutdown(asio::ip::tcp::socket::shutdown_both, ec);
+	socket.shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
 	// close the socket
 	return (socket.close(ec)) ? 1 : 0;
 }
@@ -79,8 +79,8 @@ curl_socket_t Multi::OpenSocketCb(Multi* userp, curlsocktype purpose,
 	if (sock == -1)
 		return CURL_SOCKET_BAD;
 	// create and save the socket
-	userp->m_easySocketMap.emplace(sock, asio::ip::tcp::socket(
-		userp->m_executor, asio::ip::tcp::v4(), sock));
+	userp->m_easySocketMap.emplace(sock, boost::asio::ip::tcp::socket(
+		userp->m_executor, boost::asio::ip::tcp::v4(), sock));
 	return sock;
 }
 
@@ -94,7 +94,7 @@ int Multi::SocketCallback(CURL* easy, curl_socket_t s, int what,
 			delete socketp;
 			return 0;
 		}
-		asio::post(socketIt->second.get_executor(), [=] {
+		boost::asio::post(socketIt->second.get_executor(), [=] {
 			delete socketp;
 		});
 		return 0;
@@ -114,13 +114,13 @@ int Multi::SocketCallback(CURL* easy, curl_socket_t s, int what,
 	// do what cURL wants, only if it changed
 	if ((what == CURL_POLL_IN || what == CURL_POLL_INOUT) &&
 		(last != CURL_POLL_IN && last != CURL_POLL_INOUT))
-		socketIt->second.async_read_some(asio::null_buffers(),
-			asio::bind_executor(userp->m_strand, std::bind(&Multi::EventCallback,
+		socketIt->second.async_read_some(boost::asio::null_buffers(),
+			boost::asio::bind_executor(userp->m_strand, std::bind(&Multi::EventCallback,
 				userp, std::placeholders::_1, s, CURL_POLL_IN, socketp)));
 	if ((what == CURL_POLL_OUT || what == CURL_POLL_INOUT) &&
 		(last != CURL_POLL_OUT && last != CURL_POLL_INOUT))
-		socketIt->second.async_write_some(asio::null_buffers(),
-			asio::bind_executor(userp->m_strand, std::bind(&Multi::EventCallback,
+		socketIt->second.async_write_some(boost::asio::null_buffers(),
+			boost::asio::bind_executor(userp->m_strand, std::bind(&Multi::EventCallback,
 				userp, std::placeholders::_1, s, CURL_POLL_OUT, socketp)));
 	return 0;
 }
@@ -130,20 +130,20 @@ int Multi::TimerCallback(CURLM* multi, long timeout_ms, Multi* userp) noexcept
 	if (timeout_ms == -1)
 	{
 		// delete the timer, per cURL docs
-		asio::error_code ignored;
+		boost::system::error_code ignored;
 		userp->m_timer.cancel(ignored);
 	}
 	else
 	{
 		// start the timer
 		userp->m_timer.expires_from_now(std::chrono::milliseconds(timeout_ms));
-		userp->m_timer.async_wait(asio::bind_executor(
-			userp->m_strand, [userp] (const asio::error_code& ec)
+		userp->m_timer.async_wait(boost::asio::bind_executor(
+			userp->m_strand, [userp] (const boost::system::error_code& ec)
 			{
 				if (ec)
 					return;
 				int still_running = 0;
-				asio::error_code ignored;
+				boost::system::error_code ignored;
 				if (auto err = curl_multi_socket_action(userp->GetNativeHandle(),
 					CURL_SOCKET_TIMEOUT, 0, &still_running); err != CURLMcode::CURLM_OK)
 				{
@@ -179,7 +179,7 @@ void Multi::CheckTransfers() noexcept
 	}
 }
 
-void Multi::EventCallback(const asio::error_code& ec, curl_socket_t s,
+void Multi::EventCallback(const boost::system::error_code& ec, curl_socket_t s,
 	int what, int* last) noexcept
 {
 	// make sure it's a socket that hasn't bene closed
@@ -189,7 +189,7 @@ void Multi::EventCallback(const asio::error_code& ec, curl_socket_t s,
 	if (what != *last && *last != CURL_POLL_INOUT)
 		return;
 	int still_running = 0;
-	asio::error_code ignored;
+	boost::system::error_code ignored;
 	if (ec)
 		what = CURL_CSELECT_ERR;
 	if (auto err = curl_multi_socket_action(GetNativeHandle(), s,
@@ -210,12 +210,12 @@ void Multi::EventCallback(const asio::error_code& ec, curl_socket_t s,
 		(what == *last || *last == CURL_POLL_INOUT))
 	{
 		if (what == CURL_POLL_IN)
-			socketIt->second.async_read_some(asio::null_buffers(),
-				asio::bind_executor(m_strand, std::bind(&Multi::EventCallback,
+			socketIt->second.async_read_some(boost::asio::null_buffers(),
+				boost::asio::bind_executor(m_strand, std::bind(&Multi::EventCallback,
 					this, std::placeholders::_1, s, what, last)));
 		else if (what == CURL_POLL_OUT)
-			socketIt->second.async_write_some(asio::null_buffers(),
-				asio::bind_executor(m_strand, std::bind(&Multi::EventCallback,
+			socketIt->second.async_write_some(boost::asio::null_buffers(),
+				boost::asio::bind_executor(m_strand, std::bind(&Multi::EventCallback,
 					this, std::placeholders::_1, s, what, last)));
 	}
 }

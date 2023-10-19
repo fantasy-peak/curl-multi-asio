@@ -34,11 +34,9 @@ namespace std
 
 namespace cma
 {
-#ifdef CMA_USE_BOOST
-	using error_code = boost::system::error_code;
-#else
-	using error_code = asio::error_code;
-#endif
+
+using error_code = boost::system::error_code;
+
 }
 
 /// @brief Makes an error code from a CURLcode

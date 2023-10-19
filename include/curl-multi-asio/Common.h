@@ -7,13 +7,11 @@
 #define WIN32_LEAN_AND_MEAN 1
 #include <Windows.h>
 #endif
-// asio includes
-#ifdef CMA_USE_BOOST
+
 #include <boost/asio.hpp>
-using namespace boost;
-#else
-#include <asio.hpp>
-#endif
+// #include <boost/asio/as_tuple.hpp>
+// #include <boost/asio/experimental/channel.hpp>
+
 // curl includes
 #include <curl/curl.h>
 

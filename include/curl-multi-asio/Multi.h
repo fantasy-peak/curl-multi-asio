@@ -69,10 +69,10 @@ namespace cma
 			{
 				// abort if we haven't been handled
 				if (Handled() == false)
-					Complete(asio::error::operation_aborted);
+					Complete(boost::asio::error::operation_aborted);
 			}
 
-			void Complete(asio::error_code ec) noexcept
+			void Complete(boost::system::error_code ec) noexcept
 			{
 				if (Handled() == true)
 					return;
@@ -92,7 +92,7 @@ namespace cma
 		/// If you would rather manage the lifetime yourself, an interface
 		/// is provided in cma::Detail::Lifetime.
 		/// @param executor The executor type
-		Multi(const asio::any_io_executor& executor) noexcept;
+		Multi(const boost::asio::any_io_executor& executor) noexcept;
 		/// @brief Creates the handle and if necessary, initializes cURL.
 		/// If CMA_MANAGE_CURL is specified when the library is built,
 		/// cURL's lifetime is managed by the total instances of Multi,
@@ -107,7 +107,7 @@ namespace cma
 		/// @brief Cancels any outstanding operations, and destroys handles.
 		/// If CMA_MANAGE_CURL is specified when the library is built and
 		/// this is the only instance of Multi, curl_global_cleanup will be called
-		~Multi() noexcept { asio::error_code ignored; Cancel(ignored); }
+		~Multi() noexcept { boost::system::error_code ignored; Cancel(ignored); }
 		// we don't allow copies, because multi handles can't be duplicated.
 		// there's not even a reason to do so, multi handles don't really hold
 		// much of a state themselves besides stuff that shouldn't be duplicated
@@ -120,7 +120,7 @@ namespace cma
 		Multi& operator=(Multi&& other) = default;
 
 		/// @return The associated executor
-		inline asio::any_io_executor& GetExecutor() noexcept { return m_executor; }
+		inline boost::asio::any_io_executor& GetExecutor() noexcept { return m_executor; }
 		/// @return The native handle
 		inline CURLM* GetNativeHandle() const noexcept { return m_nativeHandle.get(); }
 
@@ -143,7 +143,7 @@ namespace cma
 			auto initiation = [this](auto&& handler, Easy& easy)
 			{
 				// do this in a strand so that curl can't be accessed concurrently
-				asio::post(m_executor, asio::bind_executor(m_strand,
+				boost::asio::post(m_executor, boost::asio::bind_executor(m_strand,
 					[this, handler = std::move(handler), &easy]() mutable
 				{
 					// set the open and close socket functions. this allows
@@ -164,20 +164,20 @@ namespace cma
 					m_easyHandlerMap.emplace(easy.GetNativeHandle(), std::move(performHandler));
 				}));
 			};
-			return asio::async_initiate<CompletionToken,
+			return boost::asio::async_initiate<CompletionToken,
 				void(error_code)>(initiation, token, std::ref(easyHandle));
 		}
 		/// @brief Cancels all outstanding asynchronous operations,
-		/// and calls handlers with asio::error::operation_aborted.
+		/// and calls handlers with boost::asio::error::operation_aborted.
 		/// The easy handles must stay in scope until their handlers
 		/// have been called.
 		/// @param ec The error code output
 		/// @param error The error to send to all open handlers
 		/// @return The number of asynchronous operations canceled
-		size_t Cancel(asio::error_code& ec,
+		size_t Cancel(boost::system::error_code& ec,
 			CURLMcode error = CURLMcode::CURLM_OK) noexcept;
 		/// @brief Cancels the outstanding asynchronous operation,
-		/// and calls the handler with asio::error::operation_aborted.
+		/// and calls the handler with boost::asio::error::operation_aborted.
 		/// The easy handle must stay in scope until its handler has
 		/// been called
 		/// @param easy The easy handle
@@ -226,17 +226,17 @@ namespace cma
 		/// @param ec The error code
 		/// @param s The socket
 		/// @param what The type of event
-		void EventCallback(const asio::error_code& ec, curl_socket_t s,
+		void EventCallback(const boost::system::error_code& ec, curl_socket_t s,
 			int what, int* last) noexcept;
-		asio::any_io_executor m_executor;
+		boost::asio::any_io_executor m_executor;
 #ifdef CMA_MANAGE_CURL
 		Detail::Lifetime s_lifetime;
 #endif
 		// when the handlers are destructed, their curl handle must be untracked
 		std::unordered_map<CURL*, std::unique_ptr<PerformHandlerBase>> m_easyHandlerMap;
-		std::unordered_map<curl_socket_t, asio::ip::tcp::socket> m_easySocketMap;
-		asio::system_timer m_timer;
-		asio::strand<asio::any_io_executor> m_strand;
+		std::unordered_map<curl_socket_t, boost::asio::ip::tcp::socket> m_easySocketMap;
+		boost::asio::system_timer m_timer;
+		boost::asio::strand<boost::asio::any_io_executor> m_strand;
 		std::unique_ptr<CURLM, decltype(&curl_multi_cleanup)> m_nativeHandle;
 	};
 }

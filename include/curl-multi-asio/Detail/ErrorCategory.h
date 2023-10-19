@@ -12,11 +12,9 @@ namespace cma
 {
 	namespace Detail
 	{
-#ifdef CMA_USE_BOOST
+
 		using error_category = boost::system::error_category;
-#else
-		using error_category = std::error_category;
-#endif
+
 		/// @brief A category for CURLcodes
 		struct CURLcodeErrCategory : error_category
 		{

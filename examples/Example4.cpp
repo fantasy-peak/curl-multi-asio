@@ -13,7 +13,7 @@ int main()
 	// the io_context is our choice of executor here. it will
 	// run until it is out of work, or in this case, the request
 	// finishes either with error or success
-	asio::io_context ctx;
+	boost::asio::io_context ctx;
 	// this is new here. it's a multi handle, and it is what will
 	// allow us to make asynchronous calls to perform. it takes any
 	// executor (io_context in our case) and executes all of the
@@ -30,7 +30,7 @@ int main()
 	// it up like this one, set your options, and call AsyncPerform on 
 	// that one, either before the executor starts working, or while it
 	// is working during a completion handler to start another one.
-	multi.AsyncPerform(easy, [](const asio::error_code& ec)
+	multi.AsyncPerform(easy, [](const boost::system::error_code& ec)
 		{
 			if (ec)
 				std::cerr << "Error: " << ec.message() << " (" << ec << ")\n";

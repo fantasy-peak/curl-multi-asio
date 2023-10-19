@@ -6,7 +6,7 @@ project(curl-multi-asio)
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 # we need curl of course
-find_package(CURL REQUIRED)
+# find_package(CURL REQUIRED)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -29,6 +29,7 @@ if (NOT TARGET asio)
 	add_library(asio INTERFACE)
 	target_include_directories(asio
 		INTERFACE ${CMA_ASIO_INCLUDE_DIR})
+	message (${CMA_ASIO_INCLUDE_DIR})
 endif()
 
 # we want documentation generated
