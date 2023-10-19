@@ -1,11 +1,13 @@
+
 add_library(curl-multi-asio Detail/Lifetime.cpp Easy.cpp Multi.cpp)
 
 target_include_directories(curl-multi-asio
 	PUBLIC ../include)
 
+message(WARNING ${PROJECT_SOURCE_DIR}/lib)
 target_link_libraries(curl-multi-asio
 	PUBLIC asio
-	PUBLIC CURL::libcurl)
+	PUBLIC curl-impersonate-chrome)
 
 if (CMA_CURL_OPENSSL)
 	find_package(OpenSSL REQUIRED)

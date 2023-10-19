@@ -41,6 +41,8 @@ if (${CMAKE_SOURCE_DIR} STREQUAL ${PROJECT_SOURCE_DIR})
 	endif()
 endif()
 
+link_directories(${PROJECT_SOURCE_DIR}/lib)
+
 # the main library is built in src
 add_subdirectory(src)
 if (CMA_BUILD_EXAMPLES)
